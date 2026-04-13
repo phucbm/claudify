@@ -1,0 +1,13 @@
+{
+  "name": "claudify",
+  "displayName": "Claudify",
+  "version": "1.0.0",
+  "description": "Bootstrap .claude/ structure for any existing repo",
+  "author": {
+    "name": "phucbm",
+    "url": "https://github.com/phucbm"
+  },
+  "homepage": "https://github.com/phucbm/claudify",
+  "repository": "https://github.com/phucbm/claudify",
+  "license": "MIT"
+}
