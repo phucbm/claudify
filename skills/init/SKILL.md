@@ -5,48 +5,92 @@ disable-model-invocation: true
 allowed-tools: Read Glob Bash Write Edit
 ---
 
-Bootstrap a well-structured `.claude/` folder for this repo. Every file you generate must reflect facts discovered from the actual codebase — no generic advice, no placeholder text.
+Bootstrap a well-structured `.claude/` folder for this repo. **Never write any file until the user confirms the plan.**
 
-## Step 1 — Read the repo
+---
+
+## Phase 1 — Read everything
 
 Collect context in parallel:
 
-1. **File tree** — run `find . -maxdepth 2 -not -path './.git/*' -not -path './node_modules/*' -not -path './.claude-plugin/*' | sort`
+1. **Full file tree** — `find . -maxdepth 3 -not -path './.git/*' -not -path './node_modules/*' -not -path './vendor/*' -not -path './.claude-plugin/*' | sort`
 2. **Manifest files** — read whichever exist: `package.json`, `composer.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Gemfile`
-3. **README** — read `README.md`, `README.rst`, or `README.txt` if present
-4. **Existing .claude/** — if the directory exists, list its contents and read all `.md` files inside
-5. **Entry files** — based on detected stack, read the main entry point(s): `src/index.ts`, `src/main.ts`, `main.py`, `app.py`, `main.go`, `index.php`, `app.rb`, `lib/index.js`, or equivalent
+3. **All markdown files in the repo** — find them: `find . -name "*.md" -not -path './.git/*' -not -path './node_modules/*' -not -path './vendor/*' | sort` — then read every one. This includes root-level READMEs, any existing `.claude/` files, scattered docs, CONTRIBUTING.md, ARCHITECTURE.md, etc.
+4. **Entry files** — based on detected stack, read the main entry point(s): `src/index.ts`, `src/main.ts`, `main.py`, `app.py`, `main.go`, `index.php`, `app.rb`, `lib/index.js`, or equivalent
 
-## Step 2 — Detect
+---
+
+## Phase 2 — Detect
 
 From what you read, determine:
 
-- **Language & framework** — e.g. "TypeScript + Next.js 14", "Python + FastAPI", "PHP + WordPress + ACF"
-- **Build / test / lint / dev commands** — extract exact commands from `scripts` in manifests; do not guess
-- **AI / LLM / agent features** — search imports and dependencies for: `openai`, `anthropic`, `langchain`, `llama`, `ollama`, `transformers`, `langfuse`, `llamaindex`, vector store clients (pinecone, weaviate, chroma), agent orchestration patterns. Set `has_ai = true` if found.
-- **Existing .claude/ quality** — classify as: missing, minimal/empty, scattered (has content but unstructured), or well-structured
+- **Language & framework** — e.g. "TypeScript + Next.js 14", "Python + FastAPI", "PHP + WordPress"
+- **Build / test / lint / dev commands** — exact commands from manifest scripts only; do not guess
+- **AI / LLM / agent features** — scan imports and dependencies for: `openai`, `anthropic`, `langchain`, `llama`, `ollama`, `transformers`, `langfuse`, `llamaindex`, vector store clients (pinecone, weaviate, chroma). Set `has_ai = true` if found.
+- **Existing markdown inventory** — for every `.md` file found, classify it:
+  - `keep-as-is` — already in the right place, content is good
+  - `move` — useful content but in the wrong location (e.g. `ARCHITECTURE.md` at root → `.claude/docs/architecture.md`)
+  - `merge` — content should be folded into a `.claude/` file
+  - `redundant` — generic, empty, or duplicated content that adds no value
+  - `new` — a `.claude/` file that needs to be created from scratch
 
-## Step 3 — Safety check (if .claude/ already exists with content)
+---
 
-If `.claude/` exists and contains non-trivial markdown files:
+## Phase 3 — Propose the plan
 
-1. List all current files in `.claude/`
-2. List every file you plan to create or overwrite
-3. Show the user: **"Found existing `.claude/`. I'll create/overwrite: [list]. Proceed? (yes/no)"**
-4. Wait for confirmation. If declined, stop and tell the user which files they can create manually.
+Present a clear, numbered action plan. Do not write any files yet.
 
-## Step 4 — Generate files
+Format it exactly like this:
 
-### .claude/CLAUDE.md
+```
+## claudify plan
 
-Entry point only. Reference docs with `@` imports.
+### Detected
+- Stack: [language + framework]
+- Commands: build `x`, test `x`, lint `x`, dev `x` (omit any that don't exist)
+- AI features: yes / no
 
-Required sections:
-- **Commands** — only commands confirmed to exist in the manifest (skip any that don't exist)
-- **Rules** — 3–8 concrete rules specific to this codebase that would prevent real mistakes; apply the test: "Would removing this cause Claude to make a mistake here? If not, cut it."
-- **Imports** — `@.claude/docs/architecture.md` always; `@.claude/docs/agents.md` only if `has_ai = true`
+### Actions
+1. CREATE  .claude/CLAUDE.md              — entry point with commands and rules
+2. CREATE  .claude/docs/architecture.md  — stack, structure, data flow
+3. CREATE  .claude/docs/agents.md        — AI layer (only if has_ai = true)
+4. MOVE    ARCHITECTURE.md → content merged into .claude/docs/architecture.md, original deleted
+5. MERGE   docs/dev-notes.md → relevant facts folded into .claude/docs/architecture.md
+6. DELETE  .claude/random-notes.md       — redundant, no actionable content
+...
 
-Template (adapt content to actual repo):
+### No changes needed
+- README.md — not a Claude config file, left untouched
+
+Proceed? (yes / no)
+```
+
+Rules for the action list:
+- Only list files that will actually change
+- Include a one-line reason for every action
+- Group by type: CREATE first, then MOVE/MERGE, then DELETE
+- Files outside `.claude/` that are not markdown config (source code, assets, etc.) are never touched
+- Always end with "Proceed? (yes / no)" and stop
+
+---
+
+## Phase 4 — Wait for confirmation
+
+Do not proceed until the user explicitly says yes (or an equivalent). If they say no or ask to adjust the plan, revise and re-present before doing anything.
+
+---
+
+## Phase 5 — Execute
+
+Execute exactly the approved plan, in this order: CREATE → MOVE/MERGE → DELETE.
+
+**Content rules for generated files:**
+- No generic advice ("write clean code", "add comments", "follow best practices")
+- No placeholder text — every line must reflect actual facts discovered from this repo
+- Apply the test to every rule in CLAUDE.md: "Would removing this line cause Claude to make a mistake on this codebase? If not, cut it."
+- Respect hard line limits: CLAUDE.md ≤ 80 lines, architecture.md ≤ 150 lines, agents.md ≤ 150 lines
+
+**.claude/CLAUDE.md** — entry point only, uses `@` imports:
 ```
 # [Project name]
 
@@ -57,49 +101,25 @@ Template (adapt content to actual repo):
 - Lint: `[exact command]`
 
 ## Rules
-- [Concrete rule derived from this codebase]
-- [Concrete rule derived from this codebase]
+- [Codebase-specific rule]
+- [Codebase-specific rule]
 ...
 
 @.claude/docs/architecture.md
+[@.claude/docs/agents.md — only if has_ai = true]
 ```
 
-Hard limit: **80 lines**.
+**.claude/docs/architecture.md** — tech stack, directory structure, data flow, key files, architectural decisions that affect how code is written.
 
-### .claude/docs/architecture.md
-
-Include only what is true about this repo:
-- **Stack** — language version, framework, key libraries with their roles
-- **Structure** — top-level directories and what lives in each
-- **Data flow** — how a typical request or main operation moves through the system
-- **Key files** — the 5–10 files Claude is most likely to touch and what each does
-- **Decisions** — architectural choices that affect how code should be written (e.g. "SSR not CSR", "uses edge runtime", "no ORM — raw SQL via pg")
-
-Hard limit: **150 lines**.
-
-### .claude/docs/agents.md (only if `has_ai = true`)
-
-Include:
-- How the AI/agent layer is structured
-- Where prompts live and how they are managed
-- Models used and configuration
-- Tool-calling or retrieval patterns
-- Any rate limits, cost controls, or guardrails
-
-Skip entirely if `has_ai = false`.
-
-Hard limit: **150 lines**.
-
-## Step 5 — Write the files
-
-Use the Write tool to create each file. Create the `docs/` subdirectory if needed.
-
-After writing, print a concise summary:
-- Files created
-- Files skipped and why
-- One suggested next step
+**.claude/docs/agents.md** (only if `has_ai = true`) — AI/agent layer structure, prompt locations, models used, tool-calling or retrieval patterns, guardrails.
 
 ---
 
-> To keep your CLAUDE.md files healthy over time, install the official maintenance plugin:
+## Phase 6 — Summary
+
+After all writes are done, print:
+- What was created / moved / merged / deleted
+- One next step for the user
+
+> To keep your CLAUDE.md healthy over time:
 > `/plugin install claude-md-management@claude-plugins-official`
