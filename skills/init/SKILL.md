@@ -28,17 +28,18 @@ From what you read, determine:
 - **Build / test / lint / dev commands** — exact commands from manifest scripts only; do not guess
 - **AI / LLM / agent features** — scan imports and dependencies for: `openai`, `anthropic`, `langchain`, `llama`, `ollama`, `transformers`, `langfuse`, `llamaindex`, vector store clients (pinecone, weaviate, chroma). Set `has_ai = true` if found.
 - **Existing markdown inventory** — for every `.md` file found, classify it:
-  - `keep-as-is` — already in the right place, content is good
+  - `keep-as-is` — already in the right place and well-structured, no changes needed
+  - `rewrite` — right location but content is bloated, outdated, or poorly structured (e.g. a 400-line CLAUDE.md)
   - `move` — useful content but in the wrong location (e.g. `ARCHITECTURE.md` at root → `.claude/docs/architecture.md`)
-  - `merge` — content should be folded into a `.claude/` file
-  - `redundant` — generic, empty, or duplicated content that adds no value
+  - `merge` — content should be folded into a `.claude/` file, original deleted
+  - `redundant` — generic, empty, or fully duplicated content that adds no value
   - `new` — a `.claude/` file that needs to be created from scratch
 
 ---
 
 ## Phase 3 — Propose the plan
 
-Present a clear, numbered action plan. Do not write any files yet.
+Present a clear, numbered action plan. **Do not write any files yet.**
 
 Format it exactly like this:
 
@@ -51,40 +52,56 @@ Format it exactly like this:
 - AI features: yes / no
 
 ### Actions
-1. CREATE  .claude/CLAUDE.md              — entry point with commands and rules
-2. CREATE  .claude/docs/architecture.md  — stack, structure, data flow
-3. CREATE  .claude/docs/agents.md        — AI layer (only if has_ai = true)
-4. MOVE    ARCHITECTURE.md → content merged into .claude/docs/architecture.md, original deleted
-5. MERGE   docs/dev-notes.md → relevant facts folded into .claude/docs/architecture.md
-6. DELETE  .claude/random-notes.md       — redundant, no actionable content
-...
+1. CREATE   .claude/CLAUDE.md              — entry point with commands and rules
+2. CREATE   .claude/docs/architecture.md  — stack, structure, data flow
+3. CREATE   .claude/docs/agents.md        — AI layer (only if has_ai = true)
+4. REWRITE  .claude/CLAUDE.md             — currently 400 lines; will be reduced to ≤80 with @imports
+5. MOVE     ARCHITECTURE.md → .claude/docs/architecture.md, original deleted
+6. MERGE    docs/dev-notes.md → relevant facts folded into .claude/docs/architecture.md, original deleted
+7. DELETE   .claude/random-notes.md       — redundant, no actionable content
 
 ### No changes needed
 - README.md — not a Claude config file, left untouched
+```
 
-Proceed? (yes / no)
+For every **REWRITE** action, immediately follow it with a fenced before/after diff so the user can see exactly what changes:
+
+```
+#### REWRITE .claude/CLAUDE.md
+
+**Before** (summarised — 400 lines):
+> Copy-pasted README, generic advice, outdated npm commands, no structure
+
+**After** (proposed — ~35 lines):
+[Show the full proposed file content here, verbatim]
+```
+
+After all actions and diffs, always end with:
+
+```
+Proceed? (yes / no — or tell me what to adjust)
 ```
 
 Rules for the action list:
 - Only list files that will actually change
 - Include a one-line reason for every action
-- Group by type: CREATE first, then MOVE/MERGE, then DELETE
+- Group by type: CREATE first, then REWRITE, then MOVE/MERGE, then DELETE
 - Files outside `.claude/` that are not markdown config (source code, assets, etc.) are never touched
-- Always end with "Proceed? (yes / no)" and stop
+- Always end with the confirmation prompt and stop
 
 ---
 
 ## Phase 4 — Wait for confirmation
 
-Do not proceed until the user explicitly says yes (or an equivalent). If they say no or ask to adjust the plan, revise and re-present before doing anything.
+Do not proceed until the user explicitly says yes (or equivalent). If they say no or ask to adjust, revise the plan and re-present it before doing anything.
 
 ---
 
 ## Phase 5 — Execute
 
-Execute exactly the approved plan, in this order: CREATE → MOVE/MERGE → DELETE.
+Execute exactly the approved plan, in this order: CREATE → REWRITE → MOVE/MERGE → DELETE.
 
-**Content rules for generated files:**
+**Content rules for generated and rewritten files:**
 - No generic advice ("write clean code", "add comments", "follow best practices")
 - No placeholder text — every line must reflect actual facts discovered from this repo
 - Apply the test to every rule in CLAUDE.md: "Would removing this line cause Claude to make a mistake on this codebase? If not, cut it."
@@ -118,7 +135,7 @@ Execute exactly the approved plan, in this order: CREATE → MOVE/MERGE → DELE
 ## Phase 6 — Summary
 
 After all writes are done, print:
-- What was created / moved / merged / deleted
+- What was created / rewritten / moved / merged / deleted
 - One next step for the user
 
 > To keep your CLAUDE.md healthy over time:
