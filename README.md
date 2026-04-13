@@ -5,10 +5,19 @@ Bootstrap `.claude/` structure for any existing repo.
 Run `/claudify:init` from the root of any repo and get a clean, well-structured `.claude/` folder — generated from your actual codebase, not generic templates. Follows official [Claude Code memory best practices](https://code.claude.com/docs/en/memory).
 
 ## Install
-
+Install marketplace
 ```shell
 /plugin marketplace add phucbm/claudify
+```
+
+Install plugin
+```shell
 /plugin install claudify@phucbm
+```
+
+Update plugin
+```shell
+/plugin marketplace update phucbm
 ```
 
 ## Usage
