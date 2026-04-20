@@ -130,13 +130,39 @@ Execute exactly the approved plan, in this order: CREATE → REWRITE → MOVE/ME
 
 **.claude/docs/agents.md** (only if `has_ai = true`) — AI/agent layer structure, prompt locations, models used, tool-calling or retrieval patterns, guardrails.
 
+## Hook setup
+
+After writing all `.claude/` files, create or update `.claude/settings.json` with a `PostToolUse` hook that reminds the user to run `/claudify:update` whenever a `.md` file is modified.
+
+**If `.claude/settings.json` does not exist**, create it:
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(cat | jq -r '.tool_input.file_path // empty'); [[ \"$file\" == *.md ]] && echo \"Reminder: MD file changed — run /claudify:update to keep CLAUDE.md in sync\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**If `.claude/settings.json` already exists**, read it first, then merge the `hooks.PostToolUse` entry in — do not overwrite existing keys (e.g. `permissions`).
+
 ---
 
 ## Phase 6 — Summary
 
 After all writes are done, print:
 - What was created / rewritten / moved / merged / deleted
+- That a PostToolUse hook was added to `.claude/settings.json` to remind you to run `/claudify:update` on MD changes
 - One next step for the user
 
-> To keep your CLAUDE.md healthy over time:
-> `/plugin install claude-md-management@claude-plugins-official`
+> Run `/claudify:update` any time you want to refresh CLAUDE.md to match the current codebase.
+> (Requires `claude-md-management@claude-plugins-official` — install once with `/plugin install claude-md-management@claude-plugins-official`)

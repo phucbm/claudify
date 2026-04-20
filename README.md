@@ -23,11 +23,17 @@ Update all phucbm plugins:
 
 ## Usage
 
-From the root of any repo:
-
+Bootstrap `.claude/` for a repo:
 ```shell
 /claudify:init
 ```
+
+Refresh CLAUDE.md to match the current codebase:
+```shell
+/claudify:update
+```
+
+`/claudify:update` delegates to `claude-md-management@claude-plugins-official`. If that plugin is not installed, it will tell you how to install it.
 
 ## What gets generated
 
@@ -39,10 +45,6 @@ From the root of any repo:
 
 If `.claude/` already exists with content, claudify shows you exactly what will change and asks for confirmation before writing anything.
 
-## Tip
+## Auto-hook
 
-To keep your CLAUDE.md files healthy over time, use the official `claude-md-management` plugin:
-
-```shell
-/plugin install claude-md-management@claude-plugins-official
-```
+`/claudify:init` writes a `PostToolUse` hook to `.claude/settings.json` that fires whenever Claude edits a `.md` file and reminds you to run `/claudify:update`.
